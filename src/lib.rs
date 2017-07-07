@@ -15,36 +15,39 @@ use errors::*;
 
 pub struct FitFile {
     bytes: Vec<u8>,
+    header: FitFileHeader,
 }
 impl FitFile {
     pub fn open<P: AsRef<Path>>(path: P) -> Result<FitFile> {
-        Ok(FitFile {
-            bytes: {
-                let mut buf = vec![];
-                let mut f = File::open(path)?;
-                f.read_to_end(&mut buf)?;
-                buf
-            },
-        })
-    }
-    pub fn get_header(&self) -> Result<FitFileHeader> {
-        fitfile_header(&self.bytes)
+        let bytes = {
+            let mut buf = vec![];
+            let mut f = File::open(path)?;
+            f.read_to_end(&mut buf)?;
+            buf
+        };
+        let header = fitfile_header(&bytes)
             .to_result()
-            .map_err(|e| e.description().into())
+            .map_err(|e| -> ErrorKind { e.description().into() })?;
+        let inst = FitFile {
+            bytes: bytes,
+            header: header,
+        };
+        inst.validate_data()?;
+        Ok(inst)
     }
-    pub fn validate_data(&self) -> Result<()> {
-        let header = self.get_header()?;
+    pub fn get_header(&self) -> &FitFileHeader {
+        &self.header
+    }
+    fn validate_data(&self) -> Result<()> {
+        let header = self.get_header();
         let data_size = self.bytes.len() - header.header_size as usize - 2;
         match data_size == header.data_size as usize {
             true => Ok(()),
             false => Err("Data looks to be corrupted".into()),
         }
     }
-    fn data_bytes(&self) -> Result<&[u8]> {
-        let header = self.get_header()?;
-        Ok(
-            &self.bytes[header.header_size as usize..header.data_size as usize],
-        )
+    fn data_bytes(&self) -> &[u8] {
+        &self.bytes[self.header.header_size as usize..self.header.data_size as usize]
     }
 }
 
