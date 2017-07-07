@@ -40,6 +40,10 @@ impl FitFile {
             false => Err("Data looks to be corrupted".into()),
         }
     }
+    fn data_bytes(&self) -> Result<&[u8]> {
+        let header = self.get_header()?;
+        Ok(&self.bytes[header.header_size as usize..header.data_size as usize])
+    }
 }
 
 #[derive(Debug)]
