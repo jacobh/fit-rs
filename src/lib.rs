@@ -42,7 +42,9 @@ impl FitFile {
     }
     fn data_bytes(&self) -> Result<&[u8]> {
         let header = self.get_header()?;
-        Ok(&self.bytes[header.header_size as usize..header.data_size as usize])
+        Ok(
+            &self.bytes[header.header_size as usize..header.data_size as usize],
+        )
     }
 }
 
@@ -72,3 +74,48 @@ named!(fitfile_header <FitFileHeader>, do_parse!(
         }
     )
 ));
+
+#[derive(Debug)]
+enum NormalRecordMessageType {
+    DefinitionMessage { developer_extensions_enabled: bool },
+    DataMessage,
+}
+
+#[derive(Debug)]
+enum RecordHeader {
+    Normal {
+        local_message_type: u8,
+        message_type: NormalRecordMessageType,
+    },
+    CompressedTimestamp {
+        local_message_type: u8,
+        time_offset_secs: u8,
+    },
+}
+
+named!(normal_record_header <RecordHeader>, bits! ( do_parse! (
+    local_message_type: take_bits!(u8, 4)           >>
+    tag_bits!(u8, 1, 0)                             >>
+    developer_extensions_enabled: take_bits!(u8, 1) >>
+    is_definition_message: take_bits!(u8, 1)        >>
+    tag_bits!(u8, 1, 0)                             >>
+    (
+        RecordHeader::Normal {
+            local_message_type: local_message_type,
+            message_type: match is_definition_message {
+                1 => NormalRecordMessageType::DefinitionMessage {
+                    developer_extensions_enabled: developer_extensions_enabled == 1
+                },
+                0 => NormalRecordMessageType::DataMessage,
+                _ => panic!()
+            }
+        }
+    )
+)));
+
+named!(record_header <RecordHeader>, alt!(normal_record_header));
+
+#[derive(Debug)]
+struct Record {
+    header: RecordHeader,
+}
