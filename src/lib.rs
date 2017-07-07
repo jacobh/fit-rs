@@ -116,7 +116,7 @@ named!(normal_record_header <RecordHeader>, bits! ( do_parse! (
 named!(compressed_timestamp_header <RecordHeader>, bits! ( do_parse! (
     time_offset_secs: take_bits!(u8, 5)   >>
     local_message_type: take_bits!(u8, 2) >>
-    tag_bits!(u8, 1, 1)                  >>
+    tag_bits!(u8, 1, 1)                   >>
     (
         RecordHeader::CompressedTimestamp {
             time_offset_secs: time_offset_secs,
