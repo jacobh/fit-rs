@@ -113,7 +113,19 @@ named!(normal_record_header <RecordHeader>, bits! ( do_parse! (
     )
 )));
 
-named!(record_header <RecordHeader>, alt!(normal_record_header));
+named!(compressed_timestamp_header <RecordHeader>, bits! ( do_parse! (
+    time_offset_secs: take_bits!(u8, 5)   >>
+    local_message_type: take_bits!(u8, 2) >>
+    tag_bits!(u8, 1, 1)                  >>
+    (
+        RecordHeader::CompressedTimestamp {
+            time_offset_secs: time_offset_secs,
+            local_message_type: local_message_type,
+        }
+    )
+)));
+
+named!(record_header <RecordHeader>, alt!(normal_record_header | compressed_timestamp_header));
 
 #[derive(Debug)]
 struct Record {
