@@ -133,4 +133,39 @@ named!(record_header <RecordHeader>, alt!(normal_record_header | compressed_time
 #[derive(Debug)]
 struct Record {
     header: RecordHeader,
+    crc: u16,
 }
+
+named!(record <Record>, do_parse! (
+    header: record_header >>
+    // todo data body
+    crc: le_u16           >>
+    (
+        Record {
+            header: header,
+            crc: crc
+        }
+    )
+));
+
+enum ByteOrder {
+    LittleEndian,
+    BigEndian,
+}
+
+struct DefinitionMessageContent {
+    byte_order: ByteOrder,
+    global_message_number: u16,
+    num_fields: u8,
+    field_definitions: Vec<FieldDefinition>,
+    num_dev_fields: u8,
+    dev_field_definitions: Vec<DevFieldDefinition>,
+}
+
+struct FieldDefinition {
+    field_definition_number: u8,
+    size_bytes: u8,
+    base_type: u8,
+}
+
+struct DevFieldDefinition {}
