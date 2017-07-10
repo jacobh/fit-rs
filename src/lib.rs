@@ -16,7 +16,7 @@ use std::path::Path;
 
 mod ffi;
 mod errors;
-mod decode;
+pub mod decode;
 
 use errors::*;
 
