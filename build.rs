@@ -1,12 +1,20 @@
 extern crate bindgen;
 extern crate gcc;
+extern crate glob;
 
 use std::env;
 use std::path::PathBuf;
 
-fn main() {
-    gcc::compile_library("libfit.a", &["src/sdk/fit_convert.c"]);
+use glob::glob;
 
+fn main() {
+    {
+        let mut config = gcc::Config::new();
+        for f in glob("src/sdk/*.c").unwrap() {
+            config.file(f.unwrap());
+        }
+        config.compile("libfit.a");
+    }
 
     // Tell cargo to tell rustc to link the system bzip2
     // shared library.
