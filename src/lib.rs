@@ -1,4 +1,11 @@
+<<<<<<< ad195b9d07ba0dfc2662029610f336b4e3182f6c
 #![allow(dead_code)]
+=======
+#![allow(non_upper_case_globals)]
+#![allow(non_camel_case_types)]
+#![allow(non_snake_case)]
+
+>>>>>>> hook upbinding generation and compilation of c sdk
 #[macro_use]
 extern crate error_chain;
 #[macro_use]
@@ -10,6 +17,7 @@ use std::io::Read;
 use std::fs::File;
 use std::path::Path;
 
+include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
 mod errors;
 
 use errors::*;

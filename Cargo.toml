@@ -2,7 +2,12 @@
 name = "fit"
 version = "0.1.0"
 authors = ["Jacob Haslehurst <jacob@haslehurst.net>"]
+build = "build.rs"
 
 [dependencies]
 error-chain = "0.10"
 nom = { version = "3.1", features = ["nightly"] }
+
+[build-dependencies]
+bindgen = "0.26"
+gcc = "0.3"
