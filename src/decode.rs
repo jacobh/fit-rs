@@ -9,12 +9,12 @@ enum FitBool {
     False = 0
 }
 
-struct Message {
+pub struct Message {
     data: u8,
     num: u16,
 }
 
-pub fn decode<P: AsRef<Path>>(path: P) {
+pub fn decode<P: AsRef<Path>>(path: P) -> Vec<Message> {
     let mut reader = {
         // let mut buf = vec![];
         let f = File::open(path).unwrap();
@@ -23,7 +23,12 @@ pub fn decode<P: AsRef<Path>>(path: P) {
         // buf
     };
     
-    unsafe {ffi::FitConvert_Init(FitBool::True as u8);}
+    let mut state: ffi::FIT_CONVERT_STATE;
+
+    unsafe {
+        state = ::std::mem::uninitialized();
+        ffi::FitConvert_Init(&mut state as *mut ffi::FIT_CONVERT_STATE, FitBool::False as u8);
+    }
 
     let mut messages: Vec<Message> = vec![];
 
@@ -33,15 +38,14 @@ pub fn decode<P: AsRef<Path>>(path: P) {
             Ok(0) => break,
             Ok(n) => {
                 unsafe {
-                    println!("{:?}", buf);
-                    let return_val = ffi::FitConvert_Read(buf.as_ptr() as *const c_void, n as u32);
+                    let return_val = ffi::FitConvert_Read(&mut state as *mut ffi::FIT_CONVERT_STATE, buf.as_ptr() as *const c_void, n as u32);
                     match return_val {
                         ffi::FIT_CONVERT_RETURN::FIT_CONVERT_CONTINUE => continue,
                         ffi::FIT_CONVERT_RETURN::FIT_CONVERT_MESSAGE_AVAILABLE => {
                             println!("message available!");
                             messages.push(Message{
-                                data: *ffi::FitConvert_GetMessageData(),
-                                num: ffi::FitConvert_GetMessageNumber(),
+                                data: *ffi::FitConvert_GetMessageData(&mut state as *mut ffi::FIT_CONVERT_STATE),
+                                num: ffi::FitConvert_GetMessageNumber(&mut state as *mut ffi::FIT_CONVERT_STATE),
                             });
                         },
                         ffi::FIT_CONVERT_RETURN::FIT_CONVERT_MESSAGE_NUMBER_FOUND => unimplemented!(),
@@ -56,4 +60,5 @@ pub fn decode<P: AsRef<Path>>(path: P) {
             _ => panic!()
         }
     }
+    messages
 }
